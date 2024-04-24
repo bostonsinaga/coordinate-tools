@@ -1,0 +1,1 @@
+g++ reader.cpp main.cpp -o test
