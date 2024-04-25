@@ -13,8 +13,10 @@ namespace coordinate_tools {
     enum {latPart, lngPart};
     bool axisPart = latPart;
 
+    enum {othLast, numLast, alpLast};
+    int chLast = othLast;
+
     bool keepAdd = false,
-         isNumLast = false,
          anySucceed = false;
 
     auto isStringsContain = [&]()->bool {
@@ -36,7 +38,7 @@ namespace coordinate_tools {
       // number
       else if (std::isdigit(text[i])) {
         keepAdd = true;
-        isNumLast = true;
+        chLast = numLast;
         isCurNum = true;
       }
       // dot
@@ -46,17 +48,21 @@ namespace coordinate_tools {
       }
       // separator
       else if (text[i] == ',' || text[i] == ' ') {
-        if (isNumLast) {
+        dotCtr = 0;
+        keepAdd = false;
+
+        if (chLast == numLast) {
           if (isStringsContain()) pairNeedTest = true;
           axisPart = !axisPart;
         }
-
-        dotCtr = 0;
-        keepAdd = false;
+      }
+      else if (std::isalpha(text[i])) {
+        chLast = alpLast;
+        pairNeedTest = true;
       }
 
       if (i == text.length() - 1) pairNeedTest = true;
-      if (!isCurNum) isNumLast = false;
+      if (!isCurNum && chLast != alpLast) chLast = othLast;
 
       if (keepAdd) {
         if (axisPart == latPart) latStr += text[i];
@@ -72,12 +78,17 @@ namespace coordinate_tools {
         try { lng = std::stod(lngStr); }
         catch(...) {}
 
-        if (isStringsContain()) {
-          points.push_back(Point(lat, lng));
-          anySucceed = true;
+        bool isStringsContainVar = isStringsContain();
+
+        if (isStringsContainVar || chLast == alpLast) {
           axisPart = latPart;
           latStr = "";
           lngStr = "";
+
+          if (isStringsContainVar) {
+            points.push_back(Point(lat, lng));
+            anySucceed = true;
+          }
         }
       }
     }
