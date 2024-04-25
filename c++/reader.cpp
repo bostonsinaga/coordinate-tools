@@ -13,8 +13,11 @@ namespace coordinate_tools {
     enum {latPart, lngPart};
     bool axisPart = latPart;
 
-    enum {othLast, numLast, alpLast};
-    int chLast = othLast;
+    enum {incLast, numLast, othLast};
+    int chLast = incLast;
+
+    enum {prevDot_nothing, prevDot_detected, prevDot_process};
+    int prevDotSprt = prevDot_nothing;
 
     bool keepAdd = false,
          anySucceed = false;
@@ -23,50 +26,84 @@ namespace coordinate_tools {
       return latStr.length() > 0 && lngStr.length() > 0;
     };
 
+    char ch;
+    bool chNeedUpdate = true;
+
     for (int i = 0; i < text.length(); i++) {
 
       bool isCurNum = false,
-           pairNeedTest = false;
+           pairNeedTest = false,
+           branchStop = false;
+
+      if (chNeedUpdate) {
+        chNeedUpdate = false;
+        ch = text[i];
+      }
 
       // negative sign
-      if (text[i] == '-' &&
+      if (ch == '-' &&
         ((axisPart == latPart && latStr.length() == 0) ||
         (axisPart == lngPart && lngStr.length() == 0))
       ) {
         keepAdd = true;
+        branchStop = true;
       }
       // number
-      else if (std::isdigit(text[i])) {
+      else if (std::isdigit(ch)) {
         keepAdd = true;
         chLast = numLast;
         isCurNum = true;
+        branchStop = true;
       }
       // dot
-      else if (text[i] == '.' && dotCtr == 0) {
-        dotCtr++;
-        keepAdd = true;
-      }
-      // separator
-      else if (text[i] == ',' || text[i] == ' ') {
-        dotCtr = 0;
-        keepAdd = false;
-
-        if (chLast == numLast) {
-          if (isStringsContain()) pairNeedTest = true;
-          axisPart = !axisPart;
+      else if (ch == '.') {
+        if (dotCtr == 0) {
+          dotCtr++;
+          keepAdd = true;
+          branchStop = true;
+        }
+        else {
+          ch = ',';
+          prevDotSprt = prevDot_detected;
         }
       }
-      else if (std::isalpha(text[i])) {
-        chLast = alpLast;
-        pairNeedTest = true;
+
+      if (!branchStop) {
+        // separator
+        if (ch == ',' || ch == ' ') {
+          dotCtr = 0;
+          keepAdd = false;
+
+          if (prevDotSprt == prevDot_process) {
+            i--;
+            ch = '.';
+            prevDotSprt = prevDot_nothing;
+            continue;
+          }
+          else if (prevDotSprt == prevDot_detected) {
+            prevDotSprt = prevDot_process;
+          }
+
+          if (chLast == numLast) {
+            if (isStringsContain()) pairNeedTest = true;
+            axisPart = !axisPart;
+          }
+        }
+        // not numeric character
+        else {
+          chLast = othLast;
+          pairNeedTest = true;
+        }
       }
 
+      chNeedUpdate = true;
+
       if (i == text.length() - 1) pairNeedTest = true;
-      if (!isCurNum && chLast != alpLast) chLast = othLast;
+      if (!isCurNum && chLast != othLast) chLast = incLast;
 
       if (keepAdd) {
-        if (axisPart == latPart) latStr += text[i];
-        else if (axisPart == lngPart) lngStr += text[i];
+        if (axisPart == latPart) latStr += ch;
+        else if (axisPart == lngPart) lngStr += ch;
       }
 
       if (pairNeedTest) {
@@ -80,7 +117,7 @@ namespace coordinate_tools {
 
         bool isStringsContainVar = isStringsContain();
 
-        if (isStringsContainVar || chLast == alpLast) {
+        if (isStringsContainVar || chLast == othLast) {
           axisPart = latPart;
           latStr = "";
           lngStr = "";
