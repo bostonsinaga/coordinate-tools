@@ -15,21 +15,36 @@ namespace coordinate_tools {
     enum {incLast, numLast, othLast};
     int chLast = incLast;
 
-    enum {noNumSet, evenNumSet, unevenNumSet};
-    int anyNumber = noNumSet;
-
-    bool keepAdd = false,
+    bool anySeparator = false,
          anySucceed = false;
 
     auto isStringsContain = [&]()->bool {
       return latStr.length() > 0 && lngStr.length() > 0;
     };
 
+    auto switchAxis = [&](bool &pairNeedTest) {
+      if (chLast == numLast) {
+        if (!anySeparator) anySeparator = true;
+        else if (anySeparator) {
+          if (isStringsContain()) pairNeedTest = true;
+          axisPart = !axisPart;
+          anySeparator = false;
+        }
+      }
+    };
+
+    auto addToString = [&](bool keepAdd, char ch) {
+      if (keepAdd) {
+        if (axisPart == latPart) latStr += ch;
+        else if (axisPart == lngPart) lngStr += ch;
+      }
+    };
+
     for (int i = 0; i < text.length(); i++) {
 
-      bool isCurNum = false,
-           pairNeedTest = false,
-           branchStop = false;
+      bool keepAdd = false,
+           isCurNum = false,
+           pairNeedTest = false;
 
       // negative sign
       if (text[i] == '-' &&
@@ -44,21 +59,24 @@ namespace coordinate_tools {
         chLast = numLast;
         isCurNum = true;
       }
-      // dot
+      // dot or separator
       else if (text[i] == '.') {
-        keepAdd = true;
-      }
-      // separator
-      if (text[i] == ',' || text[i] == ' ') {
-        keepAdd = false;
-
-        if (chLast == numLast) {
-          if (isStringsContain()) pairNeedTest = true;
-          axisPart = !axisPart;
-          anyNumber = false;
+        if (!anySeparator) {
+          keepAdd = true;
+          anySeparator = true;
         }
+        else switchAxis(pairNeedTest);
       }
-      // not numeric character
+      // primary separator
+      else if (text[i] == ',') {
+        if (!anySeparator) addToString(true, '.');
+        switchAxis(pairNeedTest);
+      }
+      // secondary separator
+      else if (text[i] == ' ') {
+        if (anySeparator) switchAxis(pairNeedTest);
+      }
+      // not numeric or a wild dash character
       else {
         chLast = othLast;
         pairNeedTest = true;
@@ -67,10 +85,7 @@ namespace coordinate_tools {
       if (i == text.length() - 1) pairNeedTest = true;
       if (!isCurNum && chLast != othLast) chLast = incLast;
 
-      if (keepAdd) {
-        if (axisPart == latPart) latStr += text[i];
-        else if (axisPart == lngPart) lngStr += text[i];
-      }
+      addToString(keepAdd, text[i]);
 
       if (pairNeedTest) {
         double lat = 0, lng = 0;
