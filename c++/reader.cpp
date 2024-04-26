@@ -33,10 +33,10 @@ namespace coordinate_tools {
       }
     };
 
-    auto addToString = [&](bool keepAdd, char ch) {
+    auto addToString = [&](bool keepAdd, char ch, bool reset = false) {
       if (keepAdd) {
-        if (axisPart == latPart) latStr += ch;
-        else if (axisPart == lngPart) lngStr += ch;
+        if (axisPart == latPart) latStr = reset ? "" : latStr + ch;
+        else if (axisPart == lngPart) lngStr = reset ? "" : lngStr + ch;
       }
     };
 
@@ -75,6 +75,9 @@ namespace coordinate_tools {
       // secondary separator
       else if (text[i] == ' ') {
         if (anySeparator) switchAxis(pairNeedTest);
+        else if (!anySeparator && chLast == numLast) {
+          addToString(true, '\0', true);
+        }
       }
       // not numeric or a wild dash character
       else {
