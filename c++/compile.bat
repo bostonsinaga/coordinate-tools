@@ -1,1 +1,1 @@
-g++ reader.cpp main.cpp -o test
+g++ parser.cpp main.cpp -o test
