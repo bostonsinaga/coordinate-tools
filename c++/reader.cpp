@@ -8,7 +8,6 @@ namespace coordinate_tools {
 
     points = {};
     std::string latStr, lngStr;
-    int dotCtr = 0;
 
     enum {latPart, lngPart};
     bool axisPart = latPart;
@@ -16,8 +15,8 @@ namespace coordinate_tools {
     enum {incLast, numLast, othLast};
     int chLast = incLast;
 
-    enum {prevDot_nothing, prevDot_detected, prevDot_process};
-    int prevDotSprt = prevDot_nothing;
+    enum {noNumSet, evenNumSet, unevenNumSet};
+    int anyNumber = noNumSet;
 
     bool keepAdd = false,
          anySucceed = false;
@@ -26,84 +25,51 @@ namespace coordinate_tools {
       return latStr.length() > 0 && lngStr.length() > 0;
     };
 
-    char ch;
-    bool chNeedUpdate = true;
-
     for (int i = 0; i < text.length(); i++) {
 
       bool isCurNum = false,
            pairNeedTest = false,
            branchStop = false;
 
-      if (chNeedUpdate) {
-        chNeedUpdate = false;
-        ch = text[i];
-      }
-
       // negative sign
-      if (ch == '-' &&
+      if (text[i] == '-' &&
         ((axisPart == latPart && latStr.length() == 0) ||
         (axisPart == lngPart && lngStr.length() == 0))
       ) {
         keepAdd = true;
-        branchStop = true;
       }
       // number
-      else if (std::isdigit(ch)) {
+      else if (std::isdigit(text[i])) {
         keepAdd = true;
         chLast = numLast;
         isCurNum = true;
-        branchStop = true;
       }
       // dot
-      else if (ch == '.') {
-        if (dotCtr == 0) {
-          dotCtr++;
-          keepAdd = true;
-          branchStop = true;
-        }
-        else {
-          ch = ',';
-          prevDotSprt = prevDot_detected;
+      else if (text[i] == '.') {
+        keepAdd = true;
+      }
+      // separator
+      if (text[i] == ',' || text[i] == ' ') {
+        keepAdd = false;
+
+        if (chLast == numLast) {
+          if (isStringsContain()) pairNeedTest = true;
+          axisPart = !axisPart;
+          anyNumber = false;
         }
       }
-
-      if (!branchStop) {
-        // separator
-        if (ch == ',' || ch == ' ') {
-          dotCtr = 0;
-          keepAdd = false;
-
-          if (prevDotSprt == prevDot_process) {
-            i--;
-            ch = '.';
-            prevDotSprt = prevDot_nothing;
-            continue;
-          }
-          else if (prevDotSprt == prevDot_detected) {
-            prevDotSprt = prevDot_process;
-          }
-
-          if (chLast == numLast) {
-            if (isStringsContain()) pairNeedTest = true;
-            axisPart = !axisPart;
-          }
-        }
-        // not numeric character
-        else {
-          chLast = othLast;
-          pairNeedTest = true;
-        }
+      // not numeric character
+      else {
+        chLast = othLast;
+        pairNeedTest = true;
       }
-
-      chNeedUpdate = true;
 
       if (i == text.length() - 1) pairNeedTest = true;
       if (!isCurNum && chLast != othLast) chLast = incLast;
 
       if (keepAdd) {
-        if (axisPart == latPart) latStr += ch;
-        else if (axisPart == lngPart) lngStr += ch;
+        if (axisPart == latPart) latStr += text[i];
+        else if (axisPart == lngPart) lngStr += text[i];
       }
 
       if (pairNeedTest) {
