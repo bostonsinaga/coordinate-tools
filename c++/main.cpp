@@ -4,7 +4,7 @@
 using namespace coordinate_tools;
 
 int main(int argc, char *argv[]) {    
-    Reader reader = Reader();
+    Parser reader = Parser();
 
     if (reader.testDecimal(argv[1])) {
         for (auto &pt : reader.getAllPoints()) {
