@@ -3,7 +3,7 @@
 
 // only for 2D coordinate
 #include "point.h"
-#include "reader.h"
+#include "parser.h"
 #include "converter.h"
 
 #endif // __COORDINATE_TOOLS_H__
