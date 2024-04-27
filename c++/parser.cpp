@@ -4,41 +4,10 @@
 #include "parser.h"
 
 namespace coordinate_tools {
-  bool Parser::testDecimal(std::string text) {
+  bool Parser::testDecimal(std::string &text, bool reset) {
 
-    points = {};
-    std::string latStr, lngStr;
-
-    enum {latPart, lngPart};
-    bool axisPart = latPart;
-
-    enum {incLast, numLast, othLast};
-    int chLast = incLast;
-
-    bool anySeparator = false,
-         anySucceed = false;
-
-    auto isStringsContain = [&]()->bool {
-      return latStr.length() > 0 && lngStr.length() > 0;
-    };
-
-    auto switchAxis = [&](bool &pairNeedTest) {
-      if (chLast == numLast) {
-        if (!anySeparator) anySeparator = true;
-        else if (anySeparator) {
-          if (isStringsContain()) pairNeedTest = true;
-          axisPart = !axisPart;
-          anySeparator = false;
-        }
-      }
-    };
-
-    auto addToString = [&](bool keepAdd, char ch, bool reset = false) {
-      if (keepAdd) {
-        if (axisPart == latPart) latStr = reset ? "" : latStr + ch;
-        else if (axisPart == lngPart) lngStr = reset ? "" : lngStr + ch;
-      }
-    };
+    if (reset) reset();
+    AxisString axStr;
 
     for (int i = 0; i < text.length(); i++) {
 
@@ -48,73 +17,80 @@ namespace coordinate_tools {
 
       // negative sign
       if (text[i] == '-' &&
-        ((axisPart == latPart && latStr.length() == 0) ||
-        (axisPart == lngPart && lngStr.length() == 0))
+        ((axStr.axisPart == axStr.latPart && axStr.latStr.length() == 0) ||
+        (axStr.axisPart == axStr.lngPart && axStr.lngStr.length() == 0))
       ) {
         keepAdd = true;
       }
       // number
       else if (std::isdigit(text[i])) {
         keepAdd = true;
-        chLast = numLast;
+        axStr.chLast = axStr.numLast;
         isCurNum = true;
       }
       // dot or separator
       else if (text[i] == '.') {
-        if (!anySeparator) {
+        if (!axStr.anySeparator) {
           keepAdd = true;
-          anySeparator = true;
+          axStr.anySeparator = true;
         }
-        else switchAxis(pairNeedTest);
+        else axStr.switchAxis(pairNeedTest);
       }
       // primary separator
       else if (text[i] == ',') {
-        if (!anySeparator) addToString(true, '.');
-        switchAxis(pairNeedTest);
+        if (!axStr.anySeparator) axStr.addToString(true, '.');
+        axStr.switchAxis(pairNeedTest);
       }
       // secondary separator
       else if (text[i] == ' ') {
-        if (anySeparator) switchAxis(pairNeedTest);
-        else if (!anySeparator && chLast == numLast) {
-          addToString(true, '\0', true);
+        if (axStr.anySeparator) axStr.switchAxis(pairNeedTest);
+        else if (!axStr.anySeparator && axStr.chLast == axStr.numLast) {
+          axStr.addToString(true, '\0', true);
         }
       }
       // not numeric or a wild dash character
       else {
-        chLast = othLast;
+        axStr.chLast = axStr.othLast;
         pairNeedTest = true;
       }
 
       if (i == text.length() - 1) pairNeedTest = true;
-      if (!isCurNum && chLast != othLast) chLast = incLast;
 
-      addToString(keepAdd, text[i]);
+      if (!isCurNum && axStr.chLast != axStr.othLast) {
+        axStr.chLast = axStr.incLast;
+      }
+
+      axStr.addToString(keepAdd, text[i]);
 
       if (pairNeedTest) {
         double lat = 0, lng = 0;
 
-        try { lat = std::stod(latStr); }
+        try { lat = std::stod(axStr.latStr); }
         catch(...) {}
 
-        try { lng = std::stod(lngStr); }
+        try { lng = std::stod(axStr.lngStr); }
         catch(...) {}
 
-        bool isStringsContainVar = isStringsContain();
+        bool isStringsContainVar = axStr.isStringsContain();
 
-        if (isStringsContainVar || chLast == othLast) {
-          axisPart = latPart;
-          latStr = "";
-          lngStr = "";
+        if (isStringsContainVar || axStr.chLast == axStr.othLast) {
+          axStr.axisPart = axStr.latPart;
+          axStr.latStr = "";
+          axStr.lngStr = "";
 
           if (isStringsContainVar) {
             points.push_back(Point(lat, lng));
-            anySucceed = true;
+            axStr.anySucceed = true;
           }
         }
       }
     }
 
-    return anySucceed;
+    return axStr.anySucceed;
+  }
+
+  bool Parser::testDMS(std::string &text, bool reset) {
+    return true;
   }
 }
 
