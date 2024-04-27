@@ -49,18 +49,10 @@ namespace coordinate_tools {
 
   public:
     // ex: [ -7.123, 110.123 ]
-    bool testDecimal(std::string &text, bool needReset = false);
-
-    bool testDecimal(const std::string &text, bool needReset = false) {
-      return testDecimal(text);
-    }
+    bool testDecimal(std::string text, bool needReset = false);
 
     // ex: [ 7°7'22.80"S, 110°7'22.80"E ]
-    bool testDMS(std::string &text, bool needReset = false);
-
-    bool testDMS(const std::string &text, bool needReset = false) {
-      return testDMS(text);
-    }
+    bool testDMS(std::string text, bool needReset = false);
 
     // returns the first vector
     Point getSinglePoint() {
