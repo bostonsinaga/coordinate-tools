@@ -4,9 +4,9 @@
 #include "parser.h"
 
 namespace coordinate_tools {
-  bool Parser::testDecimal(std::string &text, bool reset) {
+  bool Parser::testDecimal(std::string &text, bool needReset) {
 
-    if (reset) reset();
+    if (needReset) reset();
     AxisString axStr;
 
     for (int i = 0; i < text.length(); i++) {
@@ -89,7 +89,7 @@ namespace coordinate_tools {
     return axStr.anySucceed;
   }
 
-  bool Parser::testDMS(std::string &text, bool reset) {
+  bool Parser::testDMS(std::string &text, bool needReset) {
     return true;
   }
 }
