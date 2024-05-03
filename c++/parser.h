@@ -7,45 +7,10 @@
 #include "point.h"
 
 namespace coordinate_tools {
-  class AxisString {
-  public:
-    std::string latStr, lngStr;
-
-    enum {latPart, lngPart};
-    bool axisPart = latPart;
-
-    enum {incLast, numLast, othLast};
-    int chLast = incLast;
-
-    bool anySeparator = false,
-         anySucceed = false;
-
-    bool isStringsContain() {
-      return latStr.length() > 0 && lngStr.length() > 0;
-    }
-
-    void switchAxis(bool &pairNeedTest) {
-      if (chLast == numLast) {
-        if (!anySeparator) anySeparator = true;
-        else if (anySeparator) {
-          if (isStringsContain()) pairNeedTest = true;
-          axisPart = !axisPart;
-          anySeparator = false;
-        }
-      }
-    }
-
-    void addToString(bool keepAdd, char ch, bool needReset = false) {
-      if (keepAdd) {
-        if (axisPart == latPart) latStr = needReset ? "" : latStr + ch;
-        else if (axisPart == lngPart) lngStr = needReset ? "" : lngStr + ch;
-      }
-    }
-  };
-
   class Parser {
   private:
-    std::vector<Point> points;
+    std::vector<DecimalPoint> decPoints;
+    std::vector<DMSPoint> dmsPoints;
 
   public:
     // ex: [ -7.123, 110.123 ]
@@ -55,15 +20,28 @@ namespace coordinate_tools {
     bool testDMS(std::string text, bool needReset = false);
 
     // returns the first vector
-    Point getSinglePoint() {
-      if (points.size() > 0) {
-        return points.front();
-      }
-      else return Point();
+    DecimalPoint getSingleDecimalPoint() {
+      if (decPoints.size() > 0) return decPoints.front();
+      return DecimalPoint();
     }
 
-    std::vector<Point> getAllPoints() { return points; }
-    void reset() { points = {}; }
+    // returns the first vector
+    DMSPoint getSingleDMSPoint() {
+      if (dmsPoints.size() > 0) return dmsPoints.front();
+      return DMSPoint();
+    }
+
+    std::vector<DecimalPoint> getAllDecimalPoints() { return decPoints; }
+    std::vector<DMSPoint> getAllDMSPoints() { return dmsPoints; }
+
+    void reset(int pointType = ALL_POINT_TYPE) {
+      if (pointType == DECIMAL_POINT_TYPE) decPoints = {};
+      else if (pointType == DMS_POINT_TYPE) dmsPoints = {};
+      else if (pointType == ALL_POINT_TYPE) {
+        decPoints = {};
+        dmsPoints = {};
+      }
+    }
   };
 }
 
