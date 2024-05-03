@@ -1,0 +1,10 @@
+#ifndef __COORDINATE_TOOLS__DEFINITIONS_H__
+#define __COORDINATE_TOOLS__DEFINITIONS_H__
+
+namespace coordinate_tools {
+  enum {ALL_POINT_TYPE, DECIMAL_POINT_TYPE, DMS_POINT_TYPE};
+  enum {LAT_PART, LNG_PART};
+  enum {DEGREE_SIGN_INT = 45};
+}
+
+#endif // __COORDINATE_TOOLS__DEFINITIONS_H__
