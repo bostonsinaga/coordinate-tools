@@ -5,106 +5,108 @@
 
 namespace coordinate_tools {
 
-  // // returns 'pairNeedTest'
-  // void Parser::testString(AxisString &axStr, bool keepAdd) {
+  // ex: [ -7.123, 110.123 ]
+  bool Parser::testDecimal(std::string text, bool needReset) {
+    if (needReset) reset(DECIMAL_POINT_TYPE);
 
-  //   bool isCurNum = false,
-  //        pairNeedTest = false;
+    std::string decStr[2] = {"", ""};
+    int axisPart = LAT_PART;
 
-  //   if (!keepAdd) {
-  //     // negative sign
-  //     if (text[i] == '-' &&
-  //       ((axStr.axisPart == axStr.latPart && axStr.latStr.length() == 0) ||
-  //       (axStr.axisPart == axStr.lngPart && axStr.lngStr.length() == 0))
-  //     ) {
-  //       keepAdd = true;
-  //     }
-  //     // number
-  //     else if (std::isdigit(text[i])) {
-  //       keepAdd = true;
-  //       axStr.chLast = axStr.numLast;
-  //       isCurNum = true;
-  //     }
-  //     // dot or separator
-  //     else if (text[i] == '.') {
-  //       if (!axStr.anySeparator) {
-  //         if (!axStr.dmsPart == axStr.secPart) {
-  //           keepAdd = true;
-  //           axStr.anySeparator = true;
-  //         }
-  //       }
-  //       else axStr.switchAxis(pairNeedTest);
-  //     }
-  //     // primary separator
-  //     else if (text[i] == ',') {
-  //       if (!axStr.anySeparator) axStr.addToString(true, '.');
-  //       axStr.switchAxis(pairNeedTest);
-  //     }
-  //     // secondary separator
-  //     else if (text[i] == ' ') {
-  //       if (axStr.anySeparator) axStr.switchAxis(pairNeedTest);
-  //       else if (
-  //         !axStr.anySeparator && axStr.chLast == axStr.numLast &&
-  //         axStr.isUsingDMS(axStr.minPart)
-  //       ) {
-  //         axStr.addToString(true, '\0', true);
-  //       }
-  //     }
-  //     // not numeric or a wild dash character
-  //     else {
-  //       axStr.chLast = axStr.othLast;
-  //       pairNeedTest = true;
-  //     }
-  //   }
+    bool prevNum = false,
+         anySucceed = false,
+         anySeparator = false;
 
-  //   if (i == text.length() - 1) pairNeedTest = true;
+    enum {sign_part, int_part, frac_part};
+    int decParts[2];
 
-  //   if (!isCurNum && axStr.chLast != axStr.othLast) {
-  //     axStr.chLast = axStr.incLast;
-  //   }
+    auto resetDecParts = [&]() {
+      decParts[LAT_PART] = sign_part;
+      decParts[LNG_PART] = sign_part;
+    };
 
-  //   axStr.addToString(keepAdd, text[i]);
-  //   return pairNeedTest;
-  // }
+    resetDecParts();
 
-  // // ex: [ -7.123, 110.123 ]
-  // bool Parser::testDecimal(std::string text, bool needReset) {
+    for (int i = 0; i < text.length(); i++) {
 
-  //   if (needReset) reset();
-  //   AxisString axStr;
+      bool keepAdd = false,
+           isCurNum = false,
+           pairNeedTest = false;
 
-  //   for (int i = 0; i < text.length(); i++) {
+      // negative sign
+      if (text[i] == '-' && decParts[axisPart] == sign_part) {
+        keepAdd = true;
+        decParts[axisPart] = int_part;
+      }
+      // number
+      else if (std::isdigit(text[i])) {
+        keepAdd = true;
+        isCurNum = true;
+        prevNum = true;
 
-  //     if (testString(axStr)) {
-  //       double lat = 0, lng = 0;
+        if (decParts[axisPart] == sign_part) {
+          decParts[axisPart] = int_part;
+        }
+      }
+      // dot or separator
+      else if (text[i] == '.' && decParts[axisPart] == int_part) {
+        decParts[axisPart] = frac_part;
+        keepAdd = true;
+      }
+      // separator
+      else if (
+        (text[i] == ',' && !anySeparator &&
+        decParts[axisPart] == frac_part) ||
+        (text[i] == ' ' &&!anySeparator &&
+        prevNum && decParts[axisPart] == frac_part)
+      ) {
+        axisPart++;
+        anySeparator = true;
+        resetDecParts();
+      }
+      // error character (whitespace ignored after separator)
+      else if (!(text[i] == ' ' && anySeparator)) {
+        pairNeedTest = true;
+      }
 
-  //       try { lat = std::stod(axStr.latStr); }
-  //       catch(...) {}
+      // always test at the end of iteration
+      if (i == text.length() - 1) pairNeedTest = true;
 
-  //       try { lng = std::stod(axStr.lngStr); }
-  //       catch(...) {}
+      // reset 'prevNum'
+      if (!isCurNum) prevNum = false;
 
-  //       bool isStringsContainVar = axStr.isStringsContain();
+      // add character to string
+      if (keepAdd) decStr[axisPart] += text[i];
 
-  //       if (isStringsContainVar || axStr.chLast == axStr.othLast) {
-  //         axStr.axisPart = axStr.latPart;
-  //         axStr.latStr = "";
-  //         axStr.lngStr = "";
+      // push to decimal points
+      if (pairNeedTest) {
 
-  //         if (isStringsContainVar) {
-  //           points.push_back(Point(lat, lng));
-  //           axStr.anySucceed = true;
-  //         }
-  //       }
-  //     }
-  //   }
+        DecimalPoint decPt;
+        bool anyFail = false;
 
-  //   return axStr.anySucceed;
-  // }
+        try {
+          decPt.lat = std::stod(decStr[LAT_PART]);
+          decPt.lng = std::stod(decStr[LNG_PART]);
+        }
+        catch(...) { anyFail = true; }
+
+        axisPart = LAT_PART;
+        decStr[LAT_PART] = "";
+        decStr[LNG_PART] = "";
+        resetDecParts();
+
+        if (!anyFail) {
+          decPoints.push_back(decPt);
+          anySucceed = true;
+        }
+      }
+    }
+
+    return anySucceed;
+  }
 
   // ex: [ 7°7'22.80"S, 110°7'22.80"E ]
   bool Parser::testDMS(std::string text, bool needReset) {
-    if (needReset) reset();
+    if (needReset) reset(DMS_POINT_TYPE);
 
     bool anySucceed = false,
          anySeparator = false,
@@ -115,10 +117,9 @@ namespace coordinate_tools {
         axisParts[2] = {LAT_PART, LNG_PART},
         axisIndex = 0;
 
-    enum {degPart, minPart, secPart, sgnPart};
-    int dmsParts[4] = {degPart, degPart, degPart, degPart};
+    enum {degree_part, minute_part, second_part, compass_part};
+    int dmsParts[4], dmsIndex;
     std::string dmsStr[2][3];
-    int dmsIndex = 0;
 
     /** LAMBDA */
 
@@ -145,14 +146,17 @@ namespace coordinate_tools {
       axisParts[LNG_PART] = LNG_PART;
     };
 
+    auto resetDMSParts = [&]() {
+      for (int i = 0; i < 4; i++) { dmsParts[i] = degree_part; }
+      dmsIndex = 0;
+    };
+
     auto setAxisState = [&](int vSg, int axPt) {
 
       valSigns[axisIndex] *= vSg;
       axisParts[axisIndex] = axPt;
       axisIndex++;
-
-      for (int i = 0; i < 4; i++) { dmsParts[i] = degPart; }
-      dmsIndex = 0;
+      resetDMSParts();
 
       if (axisIndex == 2) {
 
@@ -180,6 +184,9 @@ namespace coordinate_tools {
       }
     };
 
+    // initialize 'dmsParts'
+    resetDMSParts();
+
     /** LOOP */
 
     for (int i = 0; i < text.length(); i++) {
@@ -190,28 +197,28 @@ namespace coordinate_tools {
 
       // degree sign
       if (int(text[i]) == 45 && !halfDegSign &&
-        testDMSParts(degPart)
+        testDMSParts(degree_part)
       ) {
         halfDegSign = true;
         continue;
       }
       else if (
         int(text[i]) == -90 && halfDegSign &&
-        testDMSParts(degPart)
+        testDMSParts(degree_part)
       ) {
         halfDegSign = false;
-        setDMSParts(minPart);
+        setDMSParts(minute_part);
       }
       // minute sign
-      else if (text[i] == '\'' && testDMSParts(minPart)) {
-        setDMSParts(secPart);
+      else if (text[i] == '\'' && testDMSParts(minute_part)) {
+        setDMSParts(second_part);
       }
       // second sign
-      else if (text[i] == '"' && testDMSParts(secPart)) {
-        setDMSParts(sgnPart);
+      else if (text[i] == '"' && testDMSParts(second_part)) {
+        setDMSParts(compass_part);
       }
       else if (std::isalpha(text[i]) && (
-        testDMSParts(sgnPart) || (prevNum && testDMSParts(secPart))
+        testDMSParts(compass_part) || (prevNum && testDMSParts(second_part))
       )) {
         // north letter
         if (
@@ -251,8 +258,8 @@ namespace coordinate_tools {
       // negative sign
       else if (
         text[i] == '-' &&
-        dmsParts[dmsIndex] == degPart &&
-        dmsStr[axisParts[axisIndex]][degPart] == ""
+        dmsParts[dmsIndex] == degree_part &&
+        dmsStr[axisParts[axisIndex]][degree_part] == ""
       ) {
         valSigns[axisIndex] *= -1;
       }
@@ -264,7 +271,7 @@ namespace coordinate_tools {
       }
       // dot as decimal point
       else if (text[i] == '.' && prevNum &&
-        dmsParts[dmsIndex] == secPart
+        dmsParts[dmsIndex] == second_part
       ) {
         keepAdd = true;
       }
@@ -296,9 +303,7 @@ namespace coordinate_tools {
       if (!isCurNum) prevNum = false;
 
       // add character to string
-      if (keepAdd) {
-        dmsStr[axisParts[axisIndex]][dmsParts[dmsIndex]] += text[i];
-      }
+      if (keepAdd) dmsStr[axisParts[axisIndex]][dmsParts[dmsIndex]] += text[i];
 
       // push to DMS points
       if (pairNeedTest) {
@@ -310,19 +315,18 @@ namespace coordinate_tools {
         try {
           testPt = DMSPoint(
             // latitude
-            std::stod(dmsStr[axisParts[LAT_PART]][degPart]) * valSigns[LAT_PART],
-            std::stod(dmsStr[axisParts[LAT_PART]][minPart]),
-            std::stod(dmsStr[axisParts[LAT_PART]][secPart]),
+            std::stod(dmsStr[axisParts[LAT_PART]][degree_part]) * valSigns[LAT_PART],
+            std::stod(dmsStr[axisParts[LAT_PART]][minute_part]),
+            std::stod(dmsStr[axisParts[LAT_PART]][second_part]),
             // longitude
-            std::stod(dmsStr[axisParts[LNG_PART]][degPart]) * valSigns[LNG_PART],
-            std::stod(dmsStr[axisParts[LNG_PART]][minPart]),
-            std::stod(dmsStr[axisParts[LNG_PART]][secPart])
+            std::stod(dmsStr[axisParts[LNG_PART]][degree_part]) * valSigns[LNG_PART],
+            std::stod(dmsStr[axisParts[LNG_PART]][minute_part]),
+            std::stod(dmsStr[axisParts[LNG_PART]][second_part])
           );
         }
         catch(...) { anyFail = true; }
 
-        /** RESET */
-
+        // reset
         for (int i = 0; i < 2; i++) {
           valSigns[i] = 1;
           emptyDmsStr(dmsStr[i]);
