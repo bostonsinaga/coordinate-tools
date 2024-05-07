@@ -12,9 +12,12 @@ namespace coordinate_tools {
     std::string decStr[2] = {"", ""};
     int axisPart = LAT_PART;
 
-    bool prevNum = false,
+    bool anyComma = false,
          anySucceed = false,
          anySeparator = false;
+
+    enum {ignore_last, number_last, separator_last};
+    int chLast = ignore_last;
 
     enum {sign_part, int_part, frac_part};
     int decParts[2];
@@ -29,50 +32,71 @@ namespace coordinate_tools {
     for (int i = 0; i < text.length(); i++) {
 
       bool keepAdd = false,
-           isCurNum = false,
            pairNeedTest = false;
 
       // negative sign
       if (text[i] == '-' && decParts[axisPart] == sign_part) {
         keepAdd = true;
+        chLast = ignore_last;
         decParts[axisPart] = int_part;
       }
       // number
       else if (std::isdigit(text[i])) {
-        keepAdd = true;
-        isCurNum = true;
-        prevNum = true;
 
         if (decParts[axisPart] == sign_part) {
           decParts[axisPart] = int_part;
         }
+
+        keepAdd = true;
+        chLast = number_last;
+        anySeparator = false;
       }
       // dot or separator
       else if (text[i] == '.' && decParts[axisPart] == int_part) {
         decParts[axisPart] = frac_part;
+        chLast = ignore_last;
         keepAdd = true;
       }
       // separator
-      else if (
-        (text[i] == ',' && !anySeparator &&
-        decParts[axisPart] == frac_part) ||
-        (text[i] == ' ' &&!anySeparator &&
-        prevNum && decParts[axisPart] == frac_part)
-      ) {
-        axisPart++;
-        anySeparator = true;
-        resetDecParts();
+      else if (text[i] == ',') {
+        chLast = separator_last;
+
+        // error comma
+        if (anyComma) {
+          anyComma = false;
+          pairNeedTest = true;
+        }
+        // comma separator
+        else if (!anySeparator) {
+          axisPart++;
+          anyComma = true;
+          anySeparator = true;
+          resetDecParts();
+        }
       }
-      // error character (whitespace ignored after separator)
-      else if (!(text[i] == ' ' && anySeparator)) {
-        pairNeedTest = true;
+      else if (text[i] == ' ') {
+
+        // whitespace separator
+        if (!anySeparator &&
+          chLast == number_last &&
+          decParts[axisPart] == frac_part
+        ) {
+          axisPart++;
+          anySeparator = true;
+          resetDecParts();
+        }
+        // error whitespace
+        else if (chLast != separator_last) {
+          pairNeedTest = true;
+        }
+
+        chLast = separator_last;
       }
+      // error character
+      else pairNeedTest = true;
 
       // always test at the end of iteration
       if (i == text.length() - 1) pairNeedTest = true;
-
-      // reset 'prevNum'
-      if (!isCurNum) prevNum = false;
 
       // add character to string
       if (keepAdd) decStr[axisPart] += text[i];
