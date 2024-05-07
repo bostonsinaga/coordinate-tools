@@ -82,8 +82,13 @@ namespace coordinate_tools {
           decParts[axisPart] == frac_part
         ) {
           axisPart++;
-          anySeparator = true;
           resetDecParts();
+
+          if (axisPart > LNG_PART) {
+            anyComma = false;
+            pairNeedTest = true;
+          }
+          else anySeparator = true;
         }
         // error whitespace
         else if (chLast != separator_last) {
