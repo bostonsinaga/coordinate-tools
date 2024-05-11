@@ -61,8 +61,8 @@ namespace coordinate_tools {
       else if (text[i] == ',') {
         chLast = separator_last;
 
-        // error comma
-        if (anyComma) {
+        // error comma or new pair
+        if (anyComma || (decParts[axisPart] >= sign_part && axisPart == LNG_PART)) {
           anyComma = false;
           pairNeedTest = true;
         }
@@ -124,6 +124,18 @@ namespace coordinate_tools {
         resetDecParts();
 
         if (!anyFail) {
+
+          // fix exceeded or inverted 'lng,lat'
+          if (std::abs(decPt.lat) > 90) {
+            if (std::abs(decPt.lng) <= 90) {
+              Converter::normalizeDecimalAngle(decPt.lat, Converter::MAX_DEG_180);
+              Converter::switchDecimalAxis(decPt);
+            }
+            else Converter::normalizeDecimalAngle(decPt.lat, Converter::MAX_DEG_90);
+          }
+          else Converter::normalizeDecimalAngle(decPt.lng, Converter::MAX_DEG_180);
+
+          // collect new point
           decPoints.push_back(decPt);
           anySucceed = true;
         }
