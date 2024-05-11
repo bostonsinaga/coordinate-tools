@@ -28,15 +28,18 @@ namespace coordinate_tools {
     double lat = 0, lng = 0;
   };
 
+  class DMSAxis {
+  public:
+    int deg = 0, min = 0;
+    double sec = 0.0;
+  };
+
   class DMSPoint {
   public:
-    struct Axis {
-      int deg = 0, min = 0;
-      double sec = 0.0;
-    } lat, lng;
+    DMSAxis lat, lng;
 
   private:
-    std::string getLetter(Axis *axis, int &axisPart) {
+    std::string getLetter(DMSAxis *axis, int &axisPart) {
       // positive
       if (axis->deg >= 0) {
         if (axisPart == LAT_PART) return "N";
@@ -85,7 +88,7 @@ namespace coordinate_tools {
     }
 
     std::string stringifySingle(int axisPart) {
-      Axis *usedPart;
+      DMSAxis *usedPart;
 
       if (axisPart == LAT_PART) usedPart = &lat;
       else if (axisPart == LNG_PART) usedPart = &lng;
