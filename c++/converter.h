@@ -23,6 +23,9 @@ namespace coordinate_tools {
   public:
     enum {MAX_DEG_90, MAX_DEG_180};
 
+    static DecimalPoint dmsToDd(DMSPoint &before);
+    static DMSPoint ddToDms(DecimalPoint &before);
+
     static void normalizeDecimalAngle(double &axis, int maxDegreeFlag = MAX_DEG_90);
     static void normalizeDMSAngle(DMSAxis &axis, int maxDegreeFlag = MAX_DEG_90);
 
