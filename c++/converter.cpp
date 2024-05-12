@@ -5,6 +5,39 @@
 
 namespace coordinate_tools {
 
+  DecimalPoint Converter::dmsToDd(DMSPoint &before) {
+
+    double after_d[2];
+    DMSAxis before_d[2] = {before.lat, before.lng};
+
+    for (int i = 0; i < 2; i++) {
+      after_d[i] = before_d[i].getDeg();
+      after_d[i] += before_d[i].getMin() * 60;
+      after_d[i] += before_d[i].getSec() * 3600;
+    }
+
+    return DecimalPoint(after_d[0], after_d[1]);
+  }
+
+  DMSPoint Converter::ddToDms(DecimalPoint &before) {
+
+    DMSAxis after_d[2];
+    double before_d[2] = {before.lat, before.lng};
+
+    for (int i = 0; i < 2; i++) {
+
+      int deg_i = int(before_d[i]);
+      double min_d = std::abs(before_d[i] - deg_i) * 60;
+      int min_i = int(min_d);
+
+      after_d[i].setDeg(deg_i);
+      after_d[i].setSec((min_d - min_i) * 60);
+      after_d[i].setMin(min_i);
+    }
+
+    return DMSPoint(after_d[0], after_d[1]);
+  }
+
   void Converter::setMaxAbsoluteDegree(
     int &maxAbsDegree,
     int &maxDegreeFlag
