@@ -1,6 +1,7 @@
 #ifndef __COORDINATE_TOOLS__CONVERTER_CPP__
 #define __COORDINATE_TOOLS__CONVERTER_CPP__
 
+#include <iostream>
 #include "converter.h"
 
 namespace coordinate_tools {
@@ -11,9 +12,15 @@ namespace coordinate_tools {
     DMSAxis before_d[2] = {before.lat, before.lng};
 
     for (int i = 0; i < 2; i++) {
-      after_d[i] = before_d[i].getDeg();
-      after_d[i] += before_d[i].getMin() * 60;
-      after_d[i] += before_d[i].getSec() * 3600;
+
+      int curDeg = before_d[i].getDeg(),
+          absCurDeg = std::abs(curDeg);
+
+      after_d[i] = curDeg / absCurDeg * (
+        absCurDeg +
+        double(before_d[i].getMin()) / 60 +
+        before_d[i].getSec() / 3600
+      );
     }
 
     return DecimalPoint(after_d[0], after_d[1]);
