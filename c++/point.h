@@ -25,6 +25,17 @@ namespace coordinate_tools {
       lng = lng_in;
     }
 
+    std::string stringify(std::string separator = ",", bool swapped = false) {
+      double toStrLat = lat, toStrLng = lng;
+
+      if (swapped) {
+        toStrLat = lng;
+        toStrLng = lat;
+      }
+
+      return std::to_string(toStrLat) + separator + std::to_string(toStrLng);
+    }
+
     double lat = 0, lng = 0;
   };
 
@@ -123,10 +134,12 @@ namespace coordinate_tools {
       std::stringstream secStr;
       secStr << std::fixed << std::setprecision(2) << usedPart->getSec();
 
+      std::string minStr = std::to_string(usedPart->getMin()) + "'";
+      if (usedPart->getMin() < 10) minStr = "0" + minStr;
+
       return (
         std::to_string(std::abs( usedPart->getDeg() )) + "\370" + 
-        std::to_string(usedPart->getMin()) + "'" +
-        secStr.str() + "\"" +
+        minStr + secStr.str() + "\"" +
         getLetter(usedPart, axisPart)
       );
     }
