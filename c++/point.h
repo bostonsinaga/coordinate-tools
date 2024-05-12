@@ -29,9 +29,30 @@ namespace coordinate_tools {
   };
 
   class DMSAxis {
-  public:
+  private:
+    /**
+     * The value sign is contained in 'deg'.
+     * 'min' and 'sec' are absolute numbers.
+     */
     int deg = 0, min = 0;
     double sec = 0.0;
+
+  public:
+    DMSAxis() {}
+
+    DMSAxis(int deg_in, int min_in, double sec_in) {
+      deg = deg_in;
+      min = std::abs(min_in);
+      sec = std::abs(sec_in);
+    }
+
+    int getDeg() { return deg; }
+    int getMin() { return min; }
+    double getSec() { return sec; }
+
+    void setDeg(int deg_in) { deg = deg_in; }
+    void setMin(int min_in) { min = min_in; }
+    void setSec(double sec_in) { sec = sec_in; }
   };
 
   class DMSPoint {
@@ -41,7 +62,7 @@ namespace coordinate_tools {
   private:
     std::string getLetter(DMSAxis *axis, int &axisPart) {
       // positive
-      if (axis->deg >= 0) {
+      if (axis->getDeg() >= 0) {
         if (axisPart == LAT_PART) return "N";
         else if (axisPart == LNG_PART) return "E";
       }
@@ -70,21 +91,21 @@ namespace coordinate_tools {
       int lat_deg, int lat_min, double lat_sec,
       int lng_deg, int lng_min, double lng_sec
     ) {
-      lat.deg = lat_deg;
-      lat.min = lat_min;
-      lat.sec = lat_sec;
-      lng.deg = lng_deg;
-      lng.min = lng_min;
-      lng.sec = lng_sec;
+      lat.setDeg(lat_deg);
+      lat.setMin(lat_min);
+      lat.setSec(lat_sec);
+      lng.setDeg(lng_deg);
+      lng.setMin(lng_min);
+      lng.setSec(lng_sec);
     }
 
     void empty() {
-      lat.deg = 0;
-      lat.min = 0;
-      lat.sec = 0;
-      lng.deg = 0;
-      lng.min = 0;
-      lng.sec = 0;
+      lat.setDeg(0);
+      lat.setMin(0);
+      lat.setSec(0);
+      lng.setDeg(0);
+      lng.setMin(0);
+      lng.setSec(0);
     }
 
     std::string stringifySingle(int axisPart) {
@@ -95,11 +116,11 @@ namespace coordinate_tools {
       else return "";
 
       std::stringstream secStr;
-      secStr << std::fixed << std::setprecision(2) << usedPart->sec;
+      secStr << std::fixed << std::setprecision(2) << usedPart->getSec();
 
       return (
-        std::to_string(std::abs(usedPart->deg)) + "\370" + 
-        std::to_string(usedPart->min) + "'" +
+        std::to_string(std::abs( usedPart->getDeg() )) + "\370" + 
+        std::to_string(usedPart->getMin()) + "'" +
         secStr.str() + "\"" +
         getLetter(usedPart, axisPart)
       );
