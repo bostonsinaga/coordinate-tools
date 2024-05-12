@@ -10,12 +10,7 @@ namespace coordinate_tools {
   public:
     DecimalPoint() {}
 
-    DecimalPoint(DecimalPoint &pt_in) {
-      lat = pt_in.lat;
-      lng = pt_in.lng;
-    }
-
-    DecimalPoint(const DecimalPoint &pt_in) {
+    DecimalPoint(DecimalPoint pt_in) {
       lat = pt_in.lat;
       lng = pt_in.lng;
     }
@@ -77,14 +72,14 @@ namespace coordinate_tools {
   public:
     DMSPoint() {}
 
-    DMSPoint(DMSPoint &pt_in) {
+    DMSPoint(DMSPoint pt_in) {
       lat = pt_in.lat;
       lng = pt_in.lng;
     }
 
-    DMSPoint(const DMSPoint &pt_in) {
-      lat = pt_in.lat;
-      lng = pt_in.lng;
+    DMSPoint(DMSAxis lat_in, DMSAxis lng_in) {
+      lat = lat_in;
+      lng = lng_in;
     }
 
     DMSPoint(
