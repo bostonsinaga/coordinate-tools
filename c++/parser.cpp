@@ -131,7 +131,10 @@ namespace coordinate_tools {
               Converter::normalizeDecimalAngle(decPt.lat, Converter::MAX_DEG_180);
               Converter::switchDecimalAxis(decPt);
             }
-            else Converter::normalizeDecimalAngle(decPt.lat, Converter::MAX_DEG_90);
+            else {
+              Converter::normalizeDecimalAngle(decPt.lat, Converter::MAX_DEG_90);
+              Converter::normalizeDecimalAngle(decPt.lng, Converter::MAX_DEG_180);
+            }
           }
           else Converter::normalizeDecimalAngle(decPt.lng, Converter::MAX_DEG_180);
 
@@ -152,7 +155,9 @@ namespace coordinate_tools {
     bool anySucceed = false,
          anySeparator = false,
          halfDegSign = false,
-         prevNum = false;
+         prevNum = false,
+         prevNeg = false,
+         swapped = false;
 
     int valSigns[2] = {1, 1},
         axisParts[2] = {LAT_PART, LNG_PART},
@@ -182,24 +187,32 @@ namespace coordinate_tools {
       return true;
     };
 
-    auto resetAxisParts = [&]() {
-      axisParts[LAT_PART] = LAT_PART;
-      axisParts[LNG_PART] = LNG_PART;
-    };
-
     auto resetDMSParts = [&]() {
       for (int i = 0; i < 4; i++) { dmsParts[i] = degree_part; }
       dmsIndex = 0;
     };
 
-    auto setAxisState = [&](int vSg, int axPt) {
+    auto setAxisState = [&](int vSg, int axPart) {
 
-      valSigns[axisIndex] *= vSg;
-      axisParts[axisIndex] = axPt;
-      axisIndex++;
+      // detect swapped 'axisParts'
+      if (axisIndex == 0 && axPart == LNG_PART) {
+        swapped = true;
+
+        for (int i = 0; i < 3; i++) {
+          dmsStr[LNG_PART][i] = dmsStr[LAT_PART][i];
+          dmsStr[LAT_PART][i] = "";
+        }
+
+        axisParts[LAT_PART] = LNG_PART;
+        axisParts[LNG_PART] = LAT_PART;
+      }
+      
+      valSigns[axisParts[axisIndex]] *= vSg;
       resetDMSParts();
+      axisIndex++;
 
       if (axisIndex == 2) {
+        axisIndex = 0;
 
         // fix 'axisParts' duplication
         if (axisParts[LAT_PART] == axisParts[LNG_PART]) {
@@ -210,16 +223,15 @@ namespace coordinate_tools {
         }
 
         // fix swapped 'axisParts'
-        if (axisParts[LAT_PART] == LNG_PART &&
-          axisParts[LNG_PART] == LAT_PART
-        ) {
-          resetAxisParts();
-          std::string strBuff;
+        if (swapped) {
+
+          swapped = false;
+          std::string buffStr;
 
           for (int i = 0; i < 3; i++) {
-            strBuff = dmsStr[LAT_PART][i];
+            buffStr = dmsStr[LAT_PART][i];
             dmsStr[LAT_PART][i] = dmsStr[LNG_PART][i];
-            dmsStr[LNG_PART][i] = strBuff;
+            dmsStr[LNG_PART][i] = buffStr;
           }
         }
       }
@@ -236,19 +248,35 @@ namespace coordinate_tools {
            isCurNum = false,
            pairNeedTest = false;
 
-      // degree sign
-      if (int(text[i]) == 45 && !halfDegSign &&
+      // negative sign
+      if (text[i] == '-' && !prevNeg &&
+        dmsParts[dmsIndex] == degree_part &&
+        dmsStr[axisParts[axisIndex]][degree_part].length() == 0
+      ) {
+        prevNeg = true;
+        valSigns[axisIndex] *= -1;
+      }
+      // degree sign part 1
+      else if (int(text[i]) == 45 && !halfDegSign &&
         testDMSParts(degree_part)
       ) {
         halfDegSign = true;
         continue;
       }
+      // degree sign part 2
       else if (
         int(text[i]) == -90 && halfDegSign &&
         testDMSParts(degree_part)
       ) {
+        prevNeg = false;
         halfDegSign = false;
         setDMSParts(minute_part);
+      }
+      // number
+      else if (std::isdigit(text[i])) {
+        prevNum = true;
+        isCurNum = true;
+        keepAdd = true;
       }
       // minute sign
       else if (text[i] == '\'' && testDMSParts(minute_part)) {
@@ -258,6 +286,7 @@ namespace coordinate_tools {
       else if (text[i] == '"' && testDMSParts(second_part)) {
         setDMSParts(compass_part);
       }
+      // letter sign
       else if (std::isalpha(text[i]) && (
         testDMSParts(compass_part) || (prevNum && testDMSParts(second_part))
       )) {
@@ -295,20 +324,6 @@ namespace coordinate_tools {
         ) {
           setAxisState(-1, LNG_PART);
         }
-      }
-      // negative sign
-      else if (
-        text[i] == '-' &&
-        dmsParts[dmsIndex] == degree_part &&
-        dmsStr[axisParts[axisIndex]][degree_part] == ""
-      ) {
-        valSigns[axisIndex] *= -1;
-      }
-      // number
-      else if (std::isdigit(text[i])) {
-        prevNum = true;
-        isCurNum = true;
-        keepAdd = true;
       }
       // dot as decimal point
       else if (text[i] == '.' && prevNum &&
@@ -349,12 +364,12 @@ namespace coordinate_tools {
       // push to DMS points
       if (pairNeedTest) {
 
-        DMSPoint testPt;
+        DMSPoint dmsPt;
         bool anyFail = false;
         axisIndex = 0; // reset
 
         try {
-          testPt = DMSPoint(
+          dmsPt = DMSPoint(
             // latitude
             std::stod(dmsStr[axisParts[LAT_PART]][degree_part]) * valSigns[LAT_PART],
             std::stod(dmsStr[axisParts[LAT_PART]][minute_part]),
@@ -373,11 +388,27 @@ namespace coordinate_tools {
           emptyDmsStr(dmsStr[i]);
         }
 
-        resetAxisParts();
+        // reset 'axisParts'
+        axisParts[LAT_PART] = LAT_PART;
+        axisParts[LNG_PART] = LNG_PART;
 
         // push to points
         if (!anyFail) {
-          dmsPoints.push_back(testPt);
+
+          // fix exceeded or inverted 'lng,lat'
+          if (std::abs(dmsPt.lat.getDeg()) > 90) {
+            if (std::abs(dmsPt.lng.getDeg()) <= 90) {
+              Converter::normalizeDMSAngle(dmsPt.lat, Converter::MAX_DEG_180);
+              Converter::switchDMSAxis(dmsPt);
+            }
+            else {
+              Converter::normalizeDMSAngle(dmsPt.lat, Converter::MAX_DEG_90);
+              Converter::normalizeDMSAngle(dmsPt.lng, Converter::MAX_DEG_180);
+            }
+          }
+          else Converter::normalizeDMSAngle(dmsPt.lng, Converter::MAX_DEG_180);
+
+          dmsPoints.push_back(dmsPt);
           anySucceed = true;
         }
       }
