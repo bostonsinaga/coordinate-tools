@@ -65,23 +65,19 @@ namespace coordinate_tools {
   ) {
     // 90°
     if (maxDegreeFlag == MAX_DEG_90) {
-      if (valSign == 1) {
-        qrSigns = {-1, -1, 1, 1};
-        qrAdjustments = {maxAbsDegree, 0, -maxAbsDegree, 0};
-      }
-      else {
-        qrSigns = {1, 1, -1, -1};
-        qrAdjustments = {-maxAbsDegree, 0, maxAbsDegree, 0};
-      }
+      qrSigns = {-1, -1, 1, 1};
+      qrAdjustments = {maxAbsDegree, 0, -maxAbsDegree, 0};
     }
     else { // 180°
-      if (valSign == 1) {
-        qrSigns = {1, 1};
-        qrAdjustments = {-maxAbsDegree, 0};
-      }
-      else {
-        qrSigns = {-1, -1};
-        qrAdjustments = {0, maxAbsDegree};
+      qrSigns = {1, 1};
+      qrAdjustments = {-maxAbsDegree, 0};
+    }
+
+    // opposite value
+    if (valSign == -1) {
+      for (int i = 0; i < qrSigns.size(); i++) {
+        qrSigns[i] *= -1;
+        qrAdjustments[i] *= -1;
       }
     }
   }
