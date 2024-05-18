@@ -5,6 +5,7 @@
 
 namespace coordinate_tools {
 
+  // DMS to Decimal Degree
   DecimalPoint Converter::dmsToDd(DMSPoint &before) {
 
     double after_arr[2];
@@ -21,6 +22,7 @@ namespace coordinate_tools {
     return DecimalPoint(after_arr[0], after_arr[1]);
   }
 
+  // Decimal Degree to DMS
   DMSPoint Converter::ddToDms(DecimalPoint &before) {
 
     DMSAxis after_arr[2];
@@ -40,6 +42,7 @@ namespace coordinate_tools {
     return DMSPoint(after_arr[0], after_arr[1]);
   }
 
+  // normalize 'maxDegreeFlag'
   void Converter::setMaxAbsoluteDegree(
     int &maxAbsDegree,
     int &maxDegreeFlag
@@ -54,10 +57,12 @@ namespace coordinate_tools {
     else maxAbsDegree = 180;
   }
 
-  void Converter::setQuadrantDeterminators(
+  // return 'qrIndex'
+  int Converter::setQuadrantDeterminators(
     std::vector<int> &qrSigns,
     std::vector<int> &qrAdjustments,
-    int valSign, int maxDegreeFlag, int maxAbsDegree
+    int valSign, int &updateDegree,
+    int &maxDegreeFlag, int &maxAbsDegree
   ) {
     // 90°
     if (maxDegreeFlag == MAX_DEG_90) {
@@ -76,65 +81,52 @@ namespace coordinate_tools {
         qrAdjustments[i] *= -1;
       }
     }
+
+    // process with remainder
+    int qrIndex = (updateDegree / maxAbsDegree - 1) % qrSigns.size();
+    updateDegree %= maxAbsDegree;
+    return qrIndex;
   }
 
   // ex: [ -7.123, 365.123 ] to [ -7.123, xxx.yyy ]
   void Converter::normalizeDecimalAngle(double &axis, int maxDegreeFlag) {
 
     int initIntAxis = int(axis),
-        intAxis = std::abs(initIntAxis),
+        initAbsIntAxis = std::abs(initIntAxis),
+        newAxis = initAbsIntAxis,
         maxAbsDegree;
 
-    // set 'maxDegreeFlag' default to 'MAX_DEG_90'
-    if (maxDegreeFlag != MAX_DEG_90 && maxDegreeFlag != MAX_DEG_180) {
-      maxDegreeFlag = MAX_DEG_90;
-    }
-
-    // determine the degree limit
-    if (maxDegreeFlag == MAX_DEG_90) maxAbsDegree = 90;
-    else maxAbsDegree = 180;
+    setMaxAbsoluteDegree(maxAbsDegree, maxDegreeFlag);
 
     // less degree don't need to process
-    if (intAxis <= maxAbsDegree) return;
+    if (newAxis <= maxAbsDegree) return;
 
-    // default positive ('qr' for 'quadrant')
+    // default positive
     std::vector<int> qrSigns, qrAdjustments;
 
-    if (maxDegreeFlag == MAX_DEG_90) {
-      qrSigns = {-1, -1, 1, 1};
-      qrAdjustments = {maxAbsDegree, 0, -maxAbsDegree, 0};
-    }
-    else { // 180
-      qrSigns = {1, 1};
-      qrAdjustments = {-maxAbsDegree, 0};
-    }
+    // 'qr' for 'quadrant'
+    int qrIndex = setQuadrantDeterminators(
+      qrSigns, qrAdjustments,
+      initIntAxis / newAxis, newAxis,
+      maxDegreeFlag, maxAbsDegree
+    );
 
-    double fracAxis = std::abs(axis) - intAxis;
-    int qrCount = qrSigns.size();
+    // result with fraction
+    double realAxis = (
+      qrAdjustments[qrIndex] + qrSigns[qrIndex] *
+      (newAxis + std::abs(axis) - initAbsIntAxis)
+    );
 
-    // inverse for negative
-    if (initIntAxis / intAxis == -1) {
-      for (int i = 0; i < qrCount; i++) {
-        qrSigns[i] *= -1;
-        qrAdjustments[i] *= -1;
-      }
-    }
-
-    // process with remainder
-    int qrIndex = (intAxis / maxAbsDegree - 1) % qrCount;
-    intAxis %= maxAbsDegree;
-    double realAxis = qrAdjustments[qrIndex] + qrSigns[qrIndex] * (intAxis + fracAxis);
     axis = realAxis;
   }
 
-  // ex: [ 7°7'22.80"S, 365'22.80"E ] to [ 7°7'22.80"S, xxx°xx'yy.yy"* ]
+  // ex: [ 7°7'22.80"S, 270°7'22.80"E ] to [ 7°07'22.80"S, 91°06'37.20"E ] ??
   void Converter::normalizeDMSAngle(DMSAxis &axis, int maxDegreeFlag) {
 
     int newDeg = std::abs(axis.getDeg()),
         initSign = axis.getSign(),
         maxAbsDegree;
 
-    // normalize 'maxDegreeFlag'
     setMaxAbsoluteDegree(maxAbsDegree, maxDegreeFlag);
 
     // less degree don't need to process
@@ -144,14 +136,11 @@ namespace coordinate_tools {
     std::vector<int> qrSigns, qrAdjustments;
 
     // 'qr' for 'quadrant'
-    setQuadrantDeterminators(
+    int qrIndex = setQuadrantDeterminators(
       qrSigns, qrAdjustments,
-      axis.getSign(), maxDegreeFlag, maxAbsDegree
+      axis.getSign(), newDeg,
+      maxDegreeFlag, maxAbsDegree
     );
-
-    // process with remainder
-    int qrIndex = (newDeg / maxAbsDegree - 1) % qrSigns.size();
-    newDeg %= maxAbsDegree;
 
     // assign to new value
     axis.setDeg(qrAdjustments[qrIndex] + qrSigns[qrIndex] * newDeg);
