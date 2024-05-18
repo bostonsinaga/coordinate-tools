@@ -1,7 +1,6 @@
 #ifndef __COORDINATE_TOOLS__CONVERTER_CPP__
 #define __COORDINATE_TOOLS__CONVERTER_CPP__
 
-#include <iostream>
 #include "converter.h"
 
 namespace coordinate_tools {
@@ -66,19 +65,23 @@ namespace coordinate_tools {
   ) {
     // 90°
     if (maxDegreeFlag == MAX_DEG_90) {
-      qrSigns = {-1, -1, 1, 1};
-      qrAdjustments = {maxAbsDegree, 0, -maxAbsDegree, 0};
+      if (valSign == 1) {
+        qrSigns = {-1, -1, 1, 1};
+        qrAdjustments = {maxAbsDegree, 0, -maxAbsDegree, 0};
+      }
+      else {
+        qrSigns = {1, 1, -1, -1};
+        qrAdjustments = {-maxAbsDegree, 0, maxAbsDegree, 0};
+      }
     }
     else { // 180°
-      qrSigns = {1, 1};
-      qrAdjustments = {-maxAbsDegree, 0};
-    }
-
-    // inverse for negative
-    if (valSign == -1) {
-      for (int i = 0; i < qrSigns.size(); i++) {
-        qrSigns[i] *= -1;
-        qrAdjustments[i] *= -1;
+      if (valSign == 1) {
+        qrSigns = {1, 1};
+        qrAdjustments = {-maxAbsDegree, 0};
+      }
+      else {
+        qrSigns = {-1, -1};
+        qrAdjustments = {0, maxAbsDegree};
       }
     }
   }
@@ -135,14 +138,15 @@ namespace coordinate_tools {
   // ex: [ 7°7'22.80"S, 365'22.80"E ] to [ 7°7'22.80"S, xxx°xx'yy.yy"* ]
   void Converter::normalizeDMSAngle(DMSAxis &axis, int maxDegreeFlag) {
 
-    int newAxis = std::abs(axis.getDeg()),
+    int newDeg = std::abs(axis.getDeg()),
+        initSign = axis.getSign(),
         maxAbsDegree;
 
     // normalize 'maxDegreeFlag'
     setMaxAbsoluteDegree(maxAbsDegree, maxDegreeFlag);
 
     // less degree don't need to process
-    if (newAxis <= maxAbsDegree) return;
+    if (lessThanDMSAngle(axis, maxAbsDegree)) return;
 
     // default for positive
     std::vector<int> qrSigns, qrAdjustments;
@@ -150,26 +154,63 @@ namespace coordinate_tools {
     // 'qr' for 'quadrant'
     setQuadrantDeterminators(
       qrSigns, qrAdjustments,
-      axis.getDeg() / newAxis, maxDegreeFlag, maxAbsDegree
+      axis.getSign(), maxDegreeFlag, maxAbsDegree
     );
 
     // process with remainder
-    int qrIndex = (newAxis / maxAbsDegree - 1) % qrSigns.size();
-    newAxis %= maxAbsDegree;
+    int qrIndex = (newDeg / maxAbsDegree - 1) % qrSigns.size();
+    newDeg %= maxAbsDegree;
 
     // assign to new value
-    axis.setDeg(qrAdjustments[qrIndex] + qrSigns[qrIndex] * newAxis);
+    axis.setDeg(qrAdjustments[qrIndex] + qrSigns[qrIndex] * newDeg);
 
     // fraction value
     if (axis.getMin() > 0 || axis.getSec() > 0) {
-      axis.setDeg(axis.getDeg() - 1);
 
-      // version 2
-      double newFrac = 1 - axis.getMin() / 60 - axis.getSec() / 3600;
-      double newMin = newFrac * 60;
-      axis.setMin(int(newMin));
-      axis.setSec((newMin - int(newMin)) * 60);
+      double frac = double(axis.getMin()) / 60 - axis.getSec() / 3600;
+      double min_d;
+
+      if (qrAdjustments[qrIndex] != 0) {
+        min_d = frac * 60;
+
+        if (qrSigns[qrIndex] == -1) {
+          axis.setDeg(axis.getDeg() - 1);
+        }
+        else axis.setDeg(axis.getDeg() + 1);
+      }
+      else {
+        frac = 1 - frac;
+        min_d = frac * 60;
+      }
+
+      // determining the zero degree sign
+      if (axis.getDeg() == 0 && qrAdjustments[qrIndex] == 0) {
+        // negative direction
+        if (initSign == -1) {
+          if (qrSigns[qrIndex] == 1) axis.setSign(1);
+          else if (qrSigns[qrIndex] == -1) axis.setSign(-1);
+        }
+        // positive direction
+        else {
+          if (qrSigns[qrIndex] == -1) axis.setSign(-1);
+          else if (qrSigns[qrIndex] == 1) axis.setSign(1);
+        }
+      }
+      
+      axis.setMin(int(min_d));
+      axis.setSec((min_d - int(min_d)) * 60);
     }
+  }
+
+  bool Converter::lessThanDMSAngle(DMSAxis &axis, int maxAbsAngle) {
+
+    int absDeg = std::abs(axis.getDeg());
+    bool hasFraction = axis.getMin() > 0 || axis.getSec() > 0;
+
+    if (absDeg < 90 || (absDeg == maxAbsAngle && !hasFraction)) {
+      return true;
+    }
+    return false;
   }
 
   void Converter::switchDecimalAxis(DecimalPoint &pt) {
