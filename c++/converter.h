@@ -28,6 +28,7 @@ namespace coordinate_tools {
 
     static void normalizeDecimalAngle(double &axis, int maxDegreeFlag = MAX_DEG_90);
     static void normalizeDMSAngle(DMSAxis &axis, int maxDegreeFlag = MAX_DEG_90);
+    static bool lessThanDMSAngle(DMSAxis &axis, int maxAbsAngle);
 
     static void switchDecimalAxis(DecimalPoint &pt);
     static void switchDMSAxis(DMSPoint &pt);
