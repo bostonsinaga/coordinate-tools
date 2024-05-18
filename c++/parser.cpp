@@ -396,8 +396,8 @@ namespace coordinate_tools {
         if (!anyFail) {
 
           // fix exceeded or inverted 'lng,lat'
-          if (std::abs(dmsPt.lat.getDeg()) > 90) {
-            if (std::abs(dmsPt.lng.getDeg()) <= 90) {
+          if (!Converter::lessThanDMSAngle(dmsPt.lat, 90)) {
+            if (Converter::lessThanDMSAngle(dmsPt.lng, 90)) {
               Converter::normalizeDMSAngle(dmsPt.lat, Converter::MAX_DEG_180);
               Converter::switchDMSAxis(dmsPt);
             }
