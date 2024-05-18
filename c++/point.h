@@ -42,28 +42,44 @@ namespace coordinate_tools {
   class DMSAxis {
   private:
     /**
-     * The value sign is contained in 'deg'.
-     * 'min' and 'sec' are absolute numbers.
+     * The value of 'deg', 'min', and 'sec'
+     * are absolute number.
      */
-    int deg = 0, min = 0;
+    int deg = 0, min = 0, sign = 1;
     double sec = 0.0;
 
   public:
     DMSAxis() {}
 
     DMSAxis(int deg_in, int min_in, double sec_in) {
-      deg = deg_in;
-      min = std::abs(min_in);
-      sec = std::abs(sec_in);
+      setDeg(deg_in);
+      setMin(min_in);
+      setSec(sec_in);
     }
 
+    int getSign() { return sign; }
     int getDeg() { return deg; }
     int getMin() { return min; }
     double getSec() { return sec; }
 
-    void setDeg(int deg_in) { deg = deg_in; }
-    void setMin(int min_in) { min = min_in; }
-    void setSec(double sec_in) { sec = sec_in; }
+    void setDeg(int deg_in) {
+      deg = std::abs(deg_in);
+      if (deg_in != 0) sign = deg_in / deg;
+      else sign = 1;
+    }
+
+    void setMin(int min_in) {
+      min = std::abs(min_in);
+    }
+
+    void setSec(double sec_in) {
+      sec = std::abs(sec_in);
+    }
+
+    void setSign(int sign_in) {
+      if (sign_in >= 0) sign = 1;
+      else sign = -1;
+    }
   };
 
   class DMSPoint {
@@ -73,7 +89,7 @@ namespace coordinate_tools {
   private:
     std::string getLetter(DMSAxis *axis, int &axisPart) {
       // positive
-      if (axis->getDeg() >= 0) {
+      if (axis->getSign() == 1) {
         if (axisPart == LAT_PART) return "N";
         else if (axisPart == LNG_PART) return "E";
       }
@@ -138,7 +154,7 @@ namespace coordinate_tools {
       if (usedPart->getMin() < 10) minStr = "0" + minStr;
 
       return (
-        std::to_string(std::abs( usedPart->getDeg() )) + "\370" + 
+        std::to_string(usedPart->getDeg()) + "\370" + 
         minStr + secStr.str() + "\"" +
         getLetter(usedPart, axisPart)
       );
