@@ -7,41 +7,37 @@ namespace coordinate_tools {
 
   DecimalPoint Converter::dmsToDd(DMSPoint &before) {
 
-    double after_d[2];
-    DMSAxis before_d[2] = {before.lat, before.lng};
+    double after_arr[2];
+    DMSAxis before_arr[2] = {before.lat, before.lng};
 
     for (int i = 0; i < 2; i++) {
-
-      int curDeg = before_d[i].getDeg(),
-          absCurDeg = std::abs(curDeg);
-
-      after_d[i] = curDeg / absCurDeg * (
-        absCurDeg +
-        double(before_d[i].getMin()) / 60 +
-        before_d[i].getSec() / 3600
+      after_arr[i] = before_arr[i].getSign() * (
+        before_arr[i].getDeg() +
+        double(before_arr[i].getMin()) / 60 +
+        before_arr[i].getSec() / 3600
       );
     }
 
-    return DecimalPoint(after_d[0], after_d[1]);
+    return DecimalPoint(after_arr[0], after_arr[1]);
   }
 
   DMSPoint Converter::ddToDms(DecimalPoint &before) {
 
-    DMSAxis after_d[2];
-    double before_d[2] = {before.lat, before.lng};
+    DMSAxis after_arr[2];
+    double before_arr[2] = {before.lat, before.lng};
 
     for (int i = 0; i < 2; i++) {
 
-      int deg_i = int(before_d[i]);
-      double min_d = std::abs(before_d[i] - deg_i) * 60;
+      int deg_i = int(before_arr[i]);
+      double min_d = std::abs(before_arr[i] - deg_i) * 60;
       int min_i = int(min_d);
 
-      after_d[i].setDeg(deg_i);
-      after_d[i].setSec((min_d - min_i) * 60);
-      after_d[i].setMin(min_i);
+      after_arr[i].setDeg(deg_i);
+      after_arr[i].setSec((min_d - min_i) * 60);
+      after_arr[i].setMin(min_i);
     }
 
-    return DMSPoint(after_d[0], after_d[1]);
+    return DMSPoint(after_arr[0], after_arr[1]);
   }
 
   void Converter::setMaxAbsoluteDegree(
