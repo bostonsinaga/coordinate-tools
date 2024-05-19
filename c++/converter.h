@@ -14,10 +14,11 @@ namespace coordinate_tools {
       int &maxDegreeFlag
     );
 
-    static void setQuadrantDeterminators(
+    static int setQuadrantDeterminators(
       std::vector<int> &qrSigns,
       std::vector<int> &qrAdjustments,
-      int valSign, int maxDegreeFlag, int maxAbsDegree
+      int valSign, int &updateDegree,
+      int &maxDegreeFlag, int &maxAbsDegree
     );
 
   public:
