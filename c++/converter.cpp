@@ -64,12 +64,12 @@ namespace coordinate_tools {
     int valSign, int &updateDegree,
     int &maxDegreeFlag, int &maxAbsDegree
   ) {
-    // 90°
+    // 90°N
     if (maxDegreeFlag == MAX_DEG_90) {
       qrSigns = {-1, -1, 1, 1};
       qrAdjustments = {maxAbsDegree, 0, -maxAbsDegree, 0};
     }
-    else { // 180°
+    else { // 180°E
       qrSigns = {1, 1};
       qrAdjustments = {-maxAbsDegree, 0};
     }
@@ -148,36 +148,31 @@ namespace coordinate_tools {
     // fraction value
     if (axis.getMin() > 0 || axis.getSec() > 0) {
 
-      double frac = double(axis.getMin()) / 60 - axis.getSec() / 3600;
-      double min_d;
-
-      if (qrAdjustments[qrIndex] != 0) {
-        min_d = frac * 60;
-
-        if (qrSigns[qrIndex] == -1) {
-          axis.setDeg(axis.getDeg() - 1);
-        }
-        else axis.setDeg(axis.getDeg() + 1);
-      }
-      else {
-        frac = 1 - frac;
-        min_d = frac * 60;
-      }
+      double frac = double(axis.getMin()) / 60 + axis.getSec() / 3600;
 
       // determining the zero degree sign
-      if (axis.getDeg() == 0 && qrAdjustments[qrIndex] == 0) {
-        // negative direction
-        if (initSign == -1) {
-          if (qrSigns[qrIndex] == 1) axis.setSign(1);
-          else if (qrSigns[qrIndex] == -1) axis.setSign(-1);
-        }
-        // positive direction
-        else {
-          if (qrSigns[qrIndex] == -1) axis.setSign(-1);
-          else if (qrSigns[qrIndex] == 1) axis.setSign(1);
+      if (qrAdjustments[qrIndex] == 0) {
+        if (axis.getDeg() == 0) {
+          // negative direction
+          if (initSign == -1) {
+            if (qrSigns[qrIndex] == 1) axis.setSign(1);
+            else if (qrSigns[qrIndex] == -1) axis.setSign(-1);
+          }
+          // positive direction
+          else {
+            if (qrSigns[qrIndex] == -1) axis.setSign(-1);
+            else if (qrSigns[qrIndex] == 1) axis.setSign(1);
+          }
         }
       }
-      
+      // occurs when transition from 180'E to 180'W or near polar latitude rebound
+      else {
+        frac = 1 - frac;
+        axis.setDeg(axis.getDeg() - 1, true);
+      }
+
+      // fraction result
+      double min_d = frac * 60;
       axis.setMin(int(min_d));
       axis.setSec((min_d - int(min_d)) * 60);
     }
