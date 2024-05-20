@@ -152,9 +152,11 @@ namespace coordinate_tools {
   bool Parser::testDMS(std::string text, bool needReset) {
     if (needReset) reset(DMS_POINT_TYPE);
 
-    bool anySucceed = false,
+    bool anyComma = false,
+         anySucceed = false,
          anySeparator = false,
          halfDegSign = false,
+         prevSign = false,
          prevNum = false,
          prevNeg = false,
          swapped = false;
@@ -193,6 +195,8 @@ namespace coordinate_tools {
     };
 
     auto setAxisState = [&](int vSg, int axPart) {
+      anySeparator = false;
+      prevSign = true;
 
       // detect swapped 'axisParts'
       if (axisIndex == 0 && axPart == LNG_PART) {
@@ -212,7 +216,7 @@ namespace coordinate_tools {
       axisIndex++;
 
       if (axisIndex == 2) {
-        axisIndex = 0;
+        anyComma = false;
 
         // fix 'axisParts' duplication
         if (axisParts[LAT_PART] == axisParts[LNG_PART]) {
@@ -291,8 +295,7 @@ namespace coordinate_tools {
         testDMSParts(compass_part) || (prevNum && testDMSParts(second_part))
       )) {
         // north letter
-        if (
-          text[i] == 'N' || // general
+        if (text[i] == 'N' || // general
           text[i] == 'n' || // ...
           text[i] == 'U' || // indonesian
           text[i] == 'u'    // ...
@@ -333,16 +336,26 @@ namespace coordinate_tools {
       }
       // comma separator
       else if (text[i] == ',') {
-        if (axisIndex > 0) {
-          anySeparator = true;
-        }
-        // error comma
+
+        if (!anyComma) anyComma = true;
         else pairNeedTest = true;
+
+        if (!anySeparator) {
+          if (prevSign) {
+            prevSign = false;
+            anySeparator = true;
+          }
+          else pairNeedTest = true;
+        }
       }
       // whitespace or separator
       else if (text[i] == ' ') {
-        if (!anySeparator && prevNum) {
-          anySeparator = true;
+        if (!anySeparator) {
+          if (prevSign) {
+            prevSign = false;
+            anySeparator = true;
+          }
+          else pairNeedTest = true;
         }
       }
       // error character
