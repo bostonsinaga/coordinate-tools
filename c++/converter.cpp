@@ -88,7 +88,7 @@ namespace coordinate_tools {
     return qrIndex;
   }
 
-  // ex: [ -7.123, 365.123 ] to [ -7.123, xxx.yyy ]
+  // ex: [ -7.123, 365.123 ] to [ -7.123, 5.123 ]
   void Converter::normalizeDecimalAngle(double &axis, int maxDegreeFlag) {
 
     int initIntAxis = int(axis),
@@ -120,7 +120,7 @@ namespace coordinate_tools {
     axis = realAxis;
   }
 
-  // ex: [ 7°7'22.80"S, 270°7'22.80"E ] to [ 7°07'22.80"S, 91°06'37.20"E ] ??
+  // ex: [ 7°7'22.80"S, 270°7'22.80"E ] to [ 7°07'22.80"S, 89°52'37.20"W ]
   void Converter::normalizeDMSAngle(DMSAxis &axis, int maxDegreeFlag) {
 
     int newDeg = std::abs(axis.getDeg()),
@@ -165,7 +165,7 @@ namespace coordinate_tools {
           }
         }
       }
-      // occurs when transition from 180'E to 180'W or near polar latitude rebound
+      // occurs when transition from 180°E to 180°W or near polar latitude rebound
       else {
         frac = 1 - frac;
         axis.setDeg(axis.getDeg() - 1, true);
