@@ -155,8 +155,10 @@ namespace coordinate_tools {
     bool anyComma = false,
          anySucceed = false,
          anySeparator = false,
+         ignoredSpace = false,
          halfDegSign = false,
          prevSign = false,
+         prevFrac = false,
          prevNum = false,
          prevNeg = false,
          swapped = false;
@@ -179,6 +181,7 @@ namespace coordinate_tools {
 
     auto setDMSParts = [&](int flag) {
       dmsIndex++;
+      prevFrac = true;
       dmsParts[dmsIndex] = flag;
     };
 
@@ -250,6 +253,7 @@ namespace coordinate_tools {
 
       bool keepAdd = false,
            isCurNum = false,
+           isCurSpace = false,
            pairNeedTest = false;
 
       // negative sign
@@ -341,25 +345,30 @@ namespace coordinate_tools {
         else pairNeedTest = true;
 
         if (!anySeparator) {
-          if (prevSign) {
-            prevSign = false;
-            anySeparator = true;
-          }
+          if (prevSign) anySeparator = true;
           else pairNeedTest = true;
         }
       }
       // whitespace or separator
       else if (text[i] == ' ') {
-        if (!anySeparator) {
-          if (prevSign) {
-            prevSign = false;
-            anySeparator = true;
+        isCurSpace = true;
+
+        if (!anySeparator && !ignoredSpace) {
+          if (prevFrac) {
+            prevFrac = false;
+            ignoredSpace = true;
           }
+          else if (prevSign) anySeparator = true;
           else pairNeedTest = true;
         }
       }
       // error character
       else pairNeedTest = true;
+
+      // resets
+      if (!isCurNum) prevNum = false;
+      if (anySeparator) prevSign = false;
+      if (!isCurSpace) ignoredSpace = false;
 
       // always test at the end of iteration
       if (axisIndex == 2 ||
@@ -367,9 +376,6 @@ namespace coordinate_tools {
       ) {
         pairNeedTest = true;
       }
-
-      // reset 'prevNum'
-      if (!isCurNum) prevNum = false;
 
       // add character to string
       if (keepAdd) dmsStr[axisParts[axisIndex]][dmsParts[dmsIndex]] += text[i];
