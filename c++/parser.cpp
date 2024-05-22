@@ -152,7 +152,8 @@ namespace coordinate_tools {
   bool Parser::testDMS(std::string text, bool needReset) {
     if (needReset) reset(DMS_POINT_TYPE);
 
-    bool anyComma = false,
+    bool anyDot = false,
+         anyComma = false,
          anySucceed = false,
          anySeparator = false,
          ignoredSpace = false,
@@ -188,14 +189,18 @@ namespace coordinate_tools {
     };
 
     auto testDMSParts = [&](int part)->bool {
+      if (dmsIndex != part) return false;
+
       for (int i = 0; i <= part; i++) {
         if (dmsParts[i] != i) return false;
       }
+
       return true;
     };
 
     auto resetDMSParts = [&]() {
       for (int i = 0; i < 4; i++) { dmsParts[i] = degree_part; }
+      anyDot = false;
       dmsIndex = 0;
     };
 
@@ -340,8 +345,9 @@ namespace coordinate_tools {
       }
       // dot as decimal point
       else if (text[i] == '.' && prevNum &&
-        testDMSParts(second_part)
+        testDMSParts(second_part) && !anyDot
       ) {
+        anyDot = true;
         keepAdd = true;
       }
       // comma separator
