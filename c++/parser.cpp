@@ -156,6 +156,7 @@ namespace coordinate_tools {
          anySucceed = false,
          anySeparator = false,
          ignoredSpace = false,
+         spacingToSign = false,
          halfDegSign = false,
          prevSign = false,
          prevFrac = false,
@@ -182,6 +183,7 @@ namespace coordinate_tools {
     auto setDMSParts = [&](int flag) {
       dmsIndex++;
       prevFrac = true;
+      spacingToSign = false;
       dmsParts[dmsIndex] = flag;
     };
 
@@ -197,7 +199,10 @@ namespace coordinate_tools {
       dmsIndex = 0;
     };
 
+    // called at the end of axis (letter sign)
     auto setAxisState = [&](int vSg, int axPart) {
+
+      spacingToSign = false;
       anySeparator = false;
       prevSign = true;
 
@@ -258,7 +263,7 @@ namespace coordinate_tools {
 
       // negative sign
       if (text[i] == '-' && !prevNeg &&
-        dmsParts[dmsIndex] == degree_part &&
+        testDMSParts(degree_part) &&
         dmsStr[axisParts[axisIndex]][degree_part].length() == 0
       ) {
         prevNeg = true;
@@ -296,7 +301,8 @@ namespace coordinate_tools {
       }
       // letter sign
       else if (std::isalpha(text[i]) && (
-        testDMSParts(compass_part) || (prevNum && testDMSParts(second_part))
+        testDMSParts(compass_part) ||
+        ((prevNum || spacingToSign) && testDMSParts(second_part))
       )) {
         // north letter
         if (text[i] == 'N' || // general
@@ -334,7 +340,7 @@ namespace coordinate_tools {
       }
       // dot as decimal point
       else if (text[i] == '.' && prevNum &&
-        dmsParts[dmsIndex] == second_part
+        testDMSParts(second_part)
       ) {
         keepAdd = true;
       }
@@ -353,8 +359,11 @@ namespace coordinate_tools {
       else if (text[i] == ' ') {
         isCurSpace = true;
 
-        if (!anySeparator && !ignoredSpace) {
-          if (prevFrac) {
+        if (!anySeparator && !ignoredSpace && !spacingToSign) {
+          if (prevNum && testDMSParts(second_part)) {
+            spacingToSign = true;
+          }
+          else if (prevFrac) {
             prevFrac = false;
             ignoredSpace = true;
           }
