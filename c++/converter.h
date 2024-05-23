@@ -1,38 +1,13 @@
 #ifndef __COORDINATE_TOOLS__CONVERTER_H__
 #define __COORDINATE_TOOLS__CONVERTER_H__
 
-#include <vector>
 #include "point.h"
 
 namespace coordinate_tools {
   class Converter {
-  private:
-    enum {qr_signs, qr_adjustments};
-
-    static void setMaxAbsoluteDegree(
-      int &maxAbsDegree,
-      int &maxDegreeFlag
-    );
-
-    static int setQuadrantDeterminators(
-      std::vector<int> &qrSigns,
-      std::vector<int> &qrAdjustments,
-      int valSign, int &updateDegree,
-      int &maxDegreeFlag, int &maxAbsDegree
-    );
-
   public:
-    enum {MAX_DEG_90, MAX_DEG_180};
-
     static DecimalPoint dmsToDd(DMSPoint &before);
     static DMSPoint ddToDms(DecimalPoint &before);
-
-    static void normalizeDecimalAngle(double &axis, int maxDegreeFlag = MAX_DEG_90);
-    static void normalizeDMSAngle(DMSAxis &axis, int maxDegreeFlag = MAX_DEG_90);
-    static bool lessThanDMSAngle(DMSAxis &axis, int maxAbsAngle);
-
-    static void switchDecimalAxis(DecimalPoint &pt);
-    static void switchDMSAxis(DMSPoint &pt);
   };
 }
 
