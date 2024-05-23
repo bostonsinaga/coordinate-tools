@@ -123,22 +123,8 @@ namespace coordinate_tools {
         decStr[LNG_PART] = "";
         resetDecParts();
 
+        // collect new point
         if (!anyFail) {
-
-          // fix exceeded or inverted 'lng,lat'
-          if (std::abs(decPt.lat) > 90) {
-            if (std::abs(decPt.lng) <= 90) {
-              Converter::normalizeDecimalAngle(decPt.lat, Converter::MAX_DEG_180);
-              Converter::switchDecimalAxis(decPt);
-            }
-            else {
-              Converter::normalizeDecimalAngle(decPt.lat, Converter::MAX_DEG_90);
-              Converter::normalizeDecimalAngle(decPt.lng, Converter::MAX_DEG_180);
-            }
-          }
-          else Converter::normalizeDecimalAngle(decPt.lng, Converter::MAX_DEG_180);
-
-          // collect new point
           decPoints.push_back(decPt);
           anySucceed = true;
         }
@@ -426,22 +412,8 @@ namespace coordinate_tools {
         axisParts[LAT_PART] = LAT_PART;
         axisParts[LNG_PART] = LNG_PART;
 
-        // push to points
+        // collect new point
         if (!anyFail) {
-
-          // fix exceeded or inverted 'lng,lat'
-          if (!Converter::lessThanDMSAngle(dmsPt.lat, 90)) {
-            if (Converter::lessThanDMSAngle(dmsPt.lng, 90)) {
-              Converter::normalizeDMSAngle(dmsPt.lat, Converter::MAX_DEG_180);
-              Converter::switchDMSAxis(dmsPt);
-            }
-            else {
-              Converter::normalizeDMSAngle(dmsPt.lat, Converter::MAX_DEG_90);
-              Converter::normalizeDMSAngle(dmsPt.lng, Converter::MAX_DEG_180);
-            }
-          }
-          else Converter::normalizeDMSAngle(dmsPt.lng, Converter::MAX_DEG_180);
-
           dmsPoints.push_back(dmsPt);
           anySucceed = true;
         }
