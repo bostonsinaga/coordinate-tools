@@ -1,11 +1,29 @@
 #ifndef __COORDINATE_TOOLS__POINT_H__
 #define __COORDINATE_TOOLS__POINT_H__
 
+#include <vector>
 #include <iomanip>
 #include <sstream>
 #include "definitions.h"
 
 namespace coordinate_tools {
+  class Quadrant {
+  public:
+    enum {MAX_DEG_90, MAX_DEG_180};
+
+    static void setMaxAbsoluteDegree(
+      int &maxAbsDegree,
+      int &maxDegreeFlag
+    );
+
+    static int setDeterminators(
+      std::vector<int> &qrSigns,
+      std::vector<int> &qrAdjustments,
+      int valSign, int &updateDegree,
+      int &maxDegreeFlag, int &maxAbsDegree
+    );
+  };
+
   class DecimalPoint {
   public:
     DecimalPoint() {}
@@ -13,28 +31,30 @@ namespace coordinate_tools {
     DecimalPoint(DecimalPoint &pt_in) {
       lat = pt_in.lat;
       lng = pt_in.lng;
+      normalizePoint(this);
     }
 
     DecimalPoint(const DecimalPoint &pt_in) {
       lat = pt_in.lat;
       lng = pt_in.lng;
+      normalizePoint(this);
     }
 
     DecimalPoint(double lat_in, double lng_in) {
       lat = lat_in;
       lng = lng_in;
+      normalizePoint(this);
     }
 
-    std::string stringify(std::string separator = ",", bool swapped = false) {
-      double toStrLat = lat, toStrLng = lng;
-
-      if (swapped) {
-        toStrLat = lng;
-        toStrLng = lat;
-      }
-
-      return std::to_string(toStrLat) + separator + std::to_string(toStrLng);
+    static void switchAxis(DecimalPoint *pt) {
+      double buffer = pt->lat;
+      pt->lat = pt->lng;
+      pt->lng = buffer;
     }
+
+    std::string stringify(std::string separator = ",", bool swapped = false);
+    static void normalizeAngle(double &axis, int maxDegreeFlag = Quadrant::MAX_DEG_90);
+    static void normalizePoint(DecimalPoint *pt);
 
     double lat = 0, lng = 0;
   };
@@ -102,16 +122,19 @@ namespace coordinate_tools {
     DMSPoint(DMSPoint &pt_in) {
       lat = pt_in.lat;
       lng = pt_in.lng;
+      normalizePoint(this);
     }
 
     DMSPoint(const DMSPoint &pt_in) {
       lat = pt_in.lat;
       lng = pt_in.lng;
+      normalizePoint(this);
     }
 
     DMSPoint(DMSAxis lat_in, DMSAxis lng_in) {
       lat = lat_in;
       lng = lng_in;
+      normalizePoint(this);
     }
 
     DMSPoint(
@@ -122,6 +145,16 @@ namespace coordinate_tools {
     void empty();
     std::string stringifySingle(int axisPart);
     std::string stringifyPair(std::string separator = ",", bool swapped = false);
+
+    static void switchAxis(DMSPoint *pt) {
+      DMSAxis buffer = pt->lat;
+      pt->lat = pt->lng;
+      pt->lng = buffer;
+    }
+
+    static void normalizePoint(DMSPoint *pt);
+    static void normalizeAngle(DMSAxis &axis, int maxDegreeFlag = Quadrant::MAX_DEG_90);
+    static bool lessThanAngle(DMSAxis &axis, int maxAbsAngle);
   };
 }
 
