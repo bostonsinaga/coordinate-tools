@@ -1,1 +1,1 @@
-g++ parser.cpp main.cpp -o test
+g++ point.cpp converter.cpp parser.cpp main.cpp -o test
